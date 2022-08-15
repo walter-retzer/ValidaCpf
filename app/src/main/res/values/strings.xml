@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">CpfValidation</string>
+    <string name="validador_de_cpf">Validador de CPF</string>
+    <string name="validar">Validar</string>
+    <string name="voltar">Voltar</string>
+    <string name="sucesso">Sucesso</string>
+    <string name="o_cpf_xxxxxx_valido">O CPF xxxxxx, é valido!</string>
+    <string name="error">Error</string>
+    <string name="cpf_invalido">Cpf Inválido!!</string>
+    <string name="cpf_valido">CPF Válido!!</string>
+    <string name="cpf">CPF:</string>
+</resources>
