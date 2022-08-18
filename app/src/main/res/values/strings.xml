@@ -9,4 +9,5 @@
     <string name="cpf_invalido">Cpf Inválido!!</string>
     <string name="cpf_valido">CPF Válido!!</string>
     <string name="cpf">CPF:</string>
+    <string name="digite">Digite o número do CPF.</string>
 </resources>

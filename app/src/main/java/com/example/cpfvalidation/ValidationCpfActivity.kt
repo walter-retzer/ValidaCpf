@@ -2,30 +2,39 @@ package com.example.cpfvalidation
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 
 class ValidationCpfActivity : AppCompatActivity() {
 
     private val inputCPF: TextInputEditText
-        get() = findViewById(R.id.text_input_cpf)
+        get() = findViewById(R.id.textInputCpf)
+
+    private val inputCpfLayout: TextInputLayout
+        get() = findViewById(R.id.inputCpf)
 
     private val buttonValidate: Button
-        get() = findViewById(R.id.button_validate)
+        get() = findViewById(R.id.buttonValidate)
 
-    private val sharedPref: SharedPrefCpf = SharedPrefCpf.instance
+    private val counterNumbersCpf: TextView
+        get() = findViewById(R.id.textCounterNumberCpf)
 
     private var cpfInputAux = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_validation_cpf)
+
+        val colors = ContextCompat.getColorStateList(this, android.R.color.holo_red_light)
 
         supportActionBar?.hide()
         inputMaskInCpf()
@@ -34,7 +43,12 @@ class ValidationCpfActivity : AppCompatActivity() {
         buttonValidate.setOnClickListener {
             if (inputCPF.text?.length == 14) {
                 verifyCPF(inputCPF.text.toString())
-            } else Toast.makeText(this, "Digite corretamente o CPF!", Toast.LENGTH_LONG).show()
+
+            } else {
+                Toast.makeText(this, "Digite corretamente o CPF!", Toast.LENGTH_LONG).show()
+                inputCpfLayout.setHelperTextColor(colors)
+                inputCpfLayout.helperText = "Verifique o cpf digitado."
+            }
         }
     }
 
@@ -56,102 +70,93 @@ class ValidationCpfActivity : AppCompatActivity() {
 
     // Método que Verifica se o CPF digitado é válido:
     private fun verifyCPF(numberCpf: String): Boolean {
-        var sumTestFirstDigit: Int = 0
-        var sumTestSecondDigit: Int = 0
-        var testFirstDigit: Int = 0
-        var testSecondDigit: Int = 0
+        var calculateFirstDigit: Int = 0
+        var calculateSecondDigit: Int = 0
         var statusCpf: Boolean = false
 
-        //sharedPref.saveNumberCpf("CPF", numberCpf)
-
-        // Checagem de CPFs que são considerados inválidos:
-        if (numberCpf == "111.111.111-11" ||
-            numberCpf == "222.222.222-22" ||
-            numberCpf == "333.333.333-33" ||
-            numberCpf == "444.444.444-44" ||
-            numberCpf == "555.555.555-55" ||
-            numberCpf == "666.666.666-66" ||
-            numberCpf == "777.777.777-77" ||
-            numberCpf == "888.888.888-88" ||
-            numberCpf == "999.999.999-99"
-        ) {
+        // Checagem de CPFs que são inválidos:
+        if (Cpf.checkCpfInvalid(cpfNumber = numberCpf)) {
             Toast.makeText(this, "CPF Inválido!!", Toast.LENGTH_LONG).show()
             sendToCpfInvalidate(numberCpf)
-            return statusCpf
+            return false
         }
 
-        // Tratamento da String Recebida para retirar a máscara do número do CPF:
-        val numberCpfWithoutMask = clearMask(numberCpf)
-        Log.d("Mask:", numberCpfWithoutMask)
+        // Número do Cpf Recebido convertido para Int
+        val cpf = Cpf.converterCpfToInt(numberCpf)
 
-        // Conversão dos números recebidos do Tipo String para Int
-        val converterNumbersToInt = numberCpfWithoutMask.map {
-            it.toString().toInt()
-        }
+        // Valor do Número dos Digitos de Verificação do CPF Recebido:
+        val firstDigitValidateNumber = Cpf.getFirstDigit(cpf)
+        val secondDigitValidateNumber = Cpf.getSecondDigit(cpf)
 
-        // Valor do Número dos Digitos de Verificação do CPF:
-        val firstDigitValidateNumber = converterNumbersToInt[9]
-        val secondDigitValidateNumber = converterNumbersToInt[10]
+        // Somas Auxiliares para validação do CPF:
+        val sumFirstDigit = Cpf.calcSumValidate(cpf = cpf, false)
+        val sumSecondDigit = Cpf.calcSumValidate(cpf = cpf, true)
 
-        // Teste do Primeiro Digito Verficador do CPF:
-        for (i in 0..8) {
-            sumTestFirstDigit += converterNumbersToInt[i] * (10 - i)
-        }
-        Log.d("Soma Teste:", "$sumTestFirstDigit")
-
-        testFirstDigit = (sumTestFirstDigit * 10) % 11
-        Log.d("Test 1 Dig:", "$testFirstDigit")
-        if (testFirstDigit == 10) testFirstDigit = 0
-
-        // Teste do Segundo Digito Verficador do CPF:
-        for (i in 0..9) {
-            sumTestSecondDigit += converterNumbersToInt[i] * (11 - i)
-            Log.d("Soma Second Digit", "$sumTestSecondDigit")
-        }
-
-        testSecondDigit = (sumTestSecondDigit * 10) % 11
-        if (testSecondDigit == 10) testSecondDigit = 0
-
-        Log.d("Digito 1 Testado", "$testFirstDigit")
+        // Cálculo do Primeiro Digito Verificador:
+        calculateFirstDigit = Cpf.calcDigitValidation(soma = sumFirstDigit)
+        Log.d("Digito 1 Testado", "$calculateFirstDigit")
         Log.d("Digito 1 CPF", "$firstDigitValidateNumber")
 
-        Log.d("Digito 2 Testado", "$testSecondDigit")
+        // Cálculo do Segundo Digito Verificador:
+        calculateSecondDigit = Cpf.calcDigitValidation(soma = sumSecondDigit)
+        Log.d("Digito 2 Testado", "$calculateSecondDigit")
         Log.d("Digito 2 CPF", "$secondDigitValidateNumber")
 
-        statusCpf =
-            if (testFirstDigit == firstDigitValidateNumber && testSecondDigit == secondDigitValidateNumber) {
-                Toast.makeText(this, "CPF Válido!!", Toast.LENGTH_LONG).show()
-                Log.d("CPF:", "Válido!!")
-                true
-            } else {
-                Toast.makeText(this, "CPF Inválido!!", Toast.LENGTH_LONG).show()
-                Log.d("CPF:", "Inválido!!")
-                false
-            }
+        // Compara os digitos verificadores para validar o CPF:
+        statusCpf = Cpf.compareDigits(
+            calculateFirstDigit = calculateFirstDigit,
+            firstDigitValidateNumber = firstDigitValidateNumber,
+            calculateSecondDigit = calculateSecondDigit,
+            secondDigitValidateNumber = secondDigitValidateNumber,
+        )
 
+        // Inicia a Atividade correspondente ao CPF ser válido ou inválido.
         if (statusCpf) sendToCpfValidateOk(numberCpf) else sendToCpfInvalidate(numberCpf)
         return statusCpf
     }
+
 
     // Método que retira a máscara ao nuúmero de cpf digitado:
     private fun clearMask(s: String): String {
         return s.replace("-", "").replace("/", "").replace(".", "")
     }
 
+
     // Método para inserir a máscara no número do CPF digitado pelo Usuário:
     private fun inputMaskInCpf() {
+
+        var isRunning: Boolean = false
+        var isDeleting: Boolean = false
+
+
         inputCPF.addTextChangedListener(object : TextWatcher {
             var isUpdating: Boolean = false
 
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+                isDeleting = count > after
+            }
 
-            override fun afterTextChanged(s: Editable) {}
+            override fun afterTextChanged(s: Editable) {
+                if (isRunning || isDeleting) {
+                    return
+                }
 
+            }
+
+            @SuppressLint("SetTextI18n")
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 // Variáveis de strings
                 val str = clearMask(s.toString())
                 val mask = "###.###.###-##"
                 var mascara = ""
+
+                // Cor para o helper text:
+                val color = ContextCompat.getColorStateList(
+                    this@ValidationCpfActivity,
+                    android.R.color.black
+                )
+                inputCpfLayout.setHelperTextColor(color)
+                inputCpfLayout.helperText = "Digite o número do CPF."
 
                 // Checa se está sendo feito update, para não entrar em loop infinito
                 if (isUpdating) {
@@ -159,27 +164,51 @@ class ValidationCpfActivity : AppCompatActivity() {
                     return
                 }
 
-                // Checa mascara e cria string com base na mascara
-                var i = 0
-                for (m in mask.toCharArray()) {
-                    if (m != '#' && count > before) {
-                        mascara += m
-                        continue
+                // Quando houver um item numero deletado pelo usuário:
+                if (count < before) {
+                    var aux = 0
+                    for (m in mask.toCharArray()) {
+                        if (m != '#' && count < before) {
+                            mascara += m
+                            continue
+                        }
+                        try {
+                            mascara += str[aux]
+                        } catch (e: Exception) {
+                            break
+                        }
+                        aux++
                     }
-                    try {
-                        mascara += str[i]
-                    } catch (e: Exception) {
-                        break
-                    }
-                    i++
+                    counterNumbersCpf.text = "${str.length}/11"
                 }
-                // Faz o update da string no EditText e verifica se está completa
-                isUpdating = true
-                inputCPF.setText(mascara)
-                inputCPF.setSelection(mascara.length)
+
+                // Quando houver um item numero sendo inserido pelo usuário:
+                if (count > before) {
+                    // Checa mascara e cria string com base na mascara
+                    var i = 0
+                    for (m in mask.toCharArray()) {
+                        if (m != '#' && count > before) {
+                            mascara += m
+                            continue
+                        }
+                        try {
+                            mascara += str[i]
+                        } catch (e: Exception) {
+                            break
+                        }
+                        i++
+                    }
+
+                    // Faz o update da string no EditText e verifica se está completa
+                    isUpdating = true
+                    inputCPF.setText(mascara)
+                    inputCPF.setSelection(mascara.length)
+                    counterNumbersCpf.text = "${str.length}/11"
+                }
             }
         })
     }
+
 
     // Método para iniciar a Activity CpfOkActivity
     private fun sendToCpfValidateOk(cpfNumber: String) {
@@ -189,6 +218,7 @@ class ValidationCpfActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+
     // Método para iniciar a Activity CpfInvalidateActivity
     private fun sendToCpfInvalidate(cpfNumber: String) {
         val intent = Intent(this, CpfInvalidActivity::class.java).apply {
@@ -197,14 +227,6 @@ class ValidationCpfActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    // Método para realizar a leitura do número do cpf salvo no Shared Pref:
-    private fun readCpf() {
-        try {
-            inputCPF.setText(sharedPref.readNumberCpf("CPF"))
-        } catch (e: java.lang.Exception) {
-            Log.e("Shared Pref", "Erro ao ler dado do CPF salvo no Shared Preferences")
-        }
-    }
 
     // Método que verifica se houve informações passadas por Bundle:
     @SuppressLint("SetTextI18n")

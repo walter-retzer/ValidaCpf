@@ -4,10 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import java.lang.Exception
 
 class CpfOkActivity : AppCompatActivity() {
 
@@ -18,8 +16,6 @@ class CpfOkActivity : AppCompatActivity() {
 
     private val buttonReturn: Button
         get() = findViewById(R.id.button_cpf_return)
-
-    private val sharedPref: SharedPrefCpf = SharedPrefCpf.instance
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,23 +42,13 @@ class CpfOkActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    // Método para realizar a leitura do número do CPF no Shared Preferences:
-    @SuppressLint("SetTextI18n")
-    private fun readCpf() {
-        try {
-            myCPF.text = "O CPF: ${sharedPref.readNumberCpf("CPF")}, é válido!"
-        } catch (e: Exception) {
-            Log.e("Shared Pref", "Erro ao ler dado do CPF salvo no Shared Preferences")
-        }
-    }
-
     // Método que verifica se houve informações passadas por Bundle:
     @SuppressLint("SetTextI18n")
     private fun checkItemsFromBundle() {
         val bundle: Bundle? = intent.extras
         if (bundle != null) {
             numberCpf = bundle.getString("Cpf").toString()
-            myCPF.text = "O CPF: $numberCpf, é inválido!"
+            myCPF.text = "O CPF: $numberCpf, é válido!"
         }
     }
 }
